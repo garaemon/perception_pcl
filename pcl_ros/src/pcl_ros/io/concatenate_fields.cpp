@@ -133,10 +133,49 @@ pcl_ros::PointCloudConcatenateFieldsSynchronizer::input_callback (const PointClo
       {
         // Copy each individual point
         memcpy (&cloud_out.data[point_offset], &clouds[i]->data[cp * clouds[i]->point_step], clouds[i]->point_step);
+        // if (i == 1) {
+        //   NODELET_INFO("%u point data: ", cp);
+        //   for (size_t j = 0; j < clouds[i]->point_step / 8; j++) {
+        //     NODELET_INFO("(%lu)%u", j, clouds[i]->data[cp * clouds[i]->point_step + j]);
+        //   }
+        //   for (size_t j = 0; j < clouds[i]->point_step / 8; j++) {
+        //     NODELET_INFO("out: (%lu)%u", j, cloud_out.data[point_offset + j]);
+        //   }
+        // }
         point_offset += clouds[i]->point_step;
       }
     }
     pub_output_.publish (boost::make_shared<const PointCloud> (cloud_out));
+
+    int count = 0;
+    int org_count = 0;
+    pcl::PointCloud<pcl::Normal> tmp_cloud;
+    fromROSMsg(cloud_out, tmp_cloud);
+    for (size_t i = 0; i < tmp_cloud.points.size(); i++) {
+      if ((fabs(tmp_cloud.points[i].normal_x) < 0.01 || isnan(tmp_cloud.points[i].normal_x))
+          && (fabs(tmp_cloud.points[i].normal_y) < 0.01 || isnan(tmp_cloud.points[i].normal_y))
+          && (fabs(tmp_cloud.points[i].normal_z) < 0.01 || isnan(tmp_cloud.points[i].normal_z))) {
+        ++count;
+      }
+      
+    }
+    pcl::PointCloud<pcl::Normal> tmp_cloud2;
+    fromROSMsg(*clouds[1], tmp_cloud2);
+    for (size_t i = 0; i < tmp_cloud2.points.size(); i++) {
+      if ((fabs(tmp_cloud2.points[i].normal_x) < 0.01 || isnan(tmp_cloud2.points[i].normal_x))
+          && (fabs(tmp_cloud2.points[i].normal_y) < 0.01 || isnan(tmp_cloud2.points[i].normal_y))
+          && (fabs(tmp_cloud2.points[i].normal_z) < 0.01 || isnan(tmp_cloud2.points[i].normal_z))) {
+        ++org_count;
+      }
+    }
+    
+    ROS_INFO("==========");
+    ROS_INFO("normal zero is %d", count);
+    ROS_INFO("normal non zero is %d", tmp_cloud.points.size() - count);
+    ROS_INFO("original normal zero is %d", org_count);
+    ROS_INFO("original normal non zero is %d", tmp_cloud2.points.size() - org_count);
+    ROS_INFO("==========");
+    
     queue_.erase (cloud->header.stamp);
   }
 
