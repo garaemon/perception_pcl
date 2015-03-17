@@ -95,6 +95,9 @@ pcl_ros::Filter::computePublish (const PointCloud2::ConstPtr &input, const Indic
     cloud_tf.reset (new PointCloud2 (cloud_transformed));
   }
 
+  // Copy timestamp to keep it
+  cloud_tf->header.stamp = input->header.stamp;
+  
   // Publish a boost shared ptr
   pub_output_.publish (cloud_tf);
 }
@@ -133,20 +136,20 @@ pcl_ros::Filter::onInit ()
 
     if (approximate_sync_)
     {
-      sync_input_indices_a_ = boost::make_shared <message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloud2, pcl::PointIndices> > >(max_queue_size_);
+      sync_input_indices_a_ = boost::make_shared <message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloud2, pcl_msgs::PointIndices> > >(max_queue_size_);
       sync_input_indices_a_->connectInput (sub_input_filter_, sub_indices_filter_);
       sync_input_indices_a_->registerCallback (bind (&Filter::input_indices_callback, this, _1, _2));
     }
     else
     {
-      sync_input_indices_e_ = boost::make_shared <message_filters::Synchronizer<sync_policies::ExactTime<PointCloud2, pcl::PointIndices> > >(max_queue_size_);
+      sync_input_indices_e_ = boost::make_shared <message_filters::Synchronizer<sync_policies::ExactTime<PointCloud2, pcl_msgs::PointIndices> > >(max_queue_size_);
       sync_input_indices_e_->connectInput (sub_input_filter_, sub_indices_filter_);
       sync_input_indices_e_->registerCallback (bind (&Filter::input_indices_callback, this, _1, _2));
     }
   }
   else
     // Subscribe in an old fashion to input only (no filters)
-    sub_input_ = pnh_->subscribe<sensor_msgs::PointCloud2> ("input", max_queue_size_,  bind (&Filter::input_indices_callback, this, _1, pcl::PointIndicesConstPtr ()));
+    sub_input_ = pnh_->subscribe<sensor_msgs::PointCloud2> ("input", max_queue_size_,  bind (&Filter::input_indices_callback, this, _1, pcl_msgs::PointIndicesConstPtr ()));
 
   NODELET_DEBUG ("[%s::onInit] Nodelet successfully created.", getName ().c_str ());
 }

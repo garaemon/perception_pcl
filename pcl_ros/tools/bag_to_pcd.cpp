@@ -48,8 +48,9 @@ Cloud Data) format.
 #include <boost/filesystem.hpp>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
-#include "pcl/io/io.h"
-#include "pcl/io/pcd_io.h"
+#include <pcl/io/io.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include "pcl_ros/transforms.h"
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
@@ -90,6 +91,7 @@ int
 
   view.addQuery (bag, rosbag::TypeQuery ("sensor_msgs/PointCloud2"));
   view.addQuery (bag, rosbag::TypeQuery ("tf/tfMessage"));
+  view.addQuery (bag, rosbag::TypeQuery ("tf2_msgs/TFMessage"));
   view_it = view.begin ();
 
   std::string output_dir = std::string (argv[3]);
@@ -129,8 +131,13 @@ int
         ++view_it;
         continue;
       }
+
       // Transform it
-      pcl_ros::transformPointCloud ("/base_link", *cloud, cloud_t, tf_listener);
+      if (!pcl_ros::transformPointCloud ("/base_link", *cloud, cloud_t, tf_listener))
+      {
+        ++view_it;
+        continue;
+      }
 
       std::cerr << "Got " << cloud_t.width * cloud_t.height << " data points in frame " << cloud_t.header.frame_id << " with the following fields: " << pcl::getFieldsList (cloud_t) << std::endl;
 
